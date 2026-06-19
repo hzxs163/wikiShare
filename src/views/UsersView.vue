@@ -66,6 +66,11 @@ async function resetPassword(user: User) {
   })
   message.value = '密码已重置。'
 }
+
+function openDatePicker(event: MouseEvent) {
+  const input = event.currentTarget as HTMLInputElement
+  input.showPicker?.()
+}
 </script>
 
 <template>
@@ -82,7 +87,13 @@ async function resetPassword(user: User) {
     <form class="panel user-form" @submit.prevent="createUser">
       <input v-model="username" placeholder="账号" required />
       <input v-model="password" type="password" placeholder="初始密码，至少 8 位" required minlength="8" />
-      <input v-model="expiresAt" type="date" title="账号有效期" />
+      <input
+        v-model="expiresAt"
+        type="date"
+        placeholder="账号有效期"
+        title="账号有效期"
+        @click="openDatePicker"
+      />
       <select v-model="role">
         <option value="user">用户</option>
         <option value="admin">管理员</option>
@@ -105,7 +116,14 @@ async function resetPassword(user: User) {
           <option value="user">用户</option>
           <option value="admin">管理员</option>
         </select>
-        <input name="expiresAt" type="date" :value="epochToDateInput(user.expires_at)" />
+        <input
+          name="expiresAt"
+          type="date"
+          :value="epochToDateInput(user.expires_at)"
+          placeholder="账号有效期"
+          title="账号有效期"
+          @click="openDatePicker"
+        />
         <span>{{ user.disabled_at ? '已禁用' : '可用' }}</span>
         <span>{{ formatDateTime(user.last_login_at) }}</span>
         <div class="row-actions">

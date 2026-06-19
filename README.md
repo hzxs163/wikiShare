@@ -105,3 +105,7 @@ pnpm run deploy
 pnpm run test
 pnpm run build
 ```
+
+
+## todo
+支持上传文件夹md. 所有文件直接就是层级. 正好obs的文件夹结构.
