@@ -504,6 +504,7 @@ async function dropOnRoot() {
                   {{ folder.name }}
                 </span>
                 <small>{{ formatDate(folder.expires_at) }}</small>
+                <span class="folder-count">{{ folder.file_count ?? 0 }}</span>
               </button>
 
               <ul v-if="folder.children.length" class="tree-list tree-children">
@@ -524,6 +525,7 @@ async function dropOnRoot() {
                       {{ child.name }}
                     </span>
                     <small>{{ formatDate(child.expires_at) }}</small>
+                    <span class="folder-count">{{ child.file_count ?? 0 }}</span>
                   </button>
 
                   <ul v-if="child.children.length" class="tree-list tree-children">
@@ -544,6 +546,7 @@ async function dropOnRoot() {
                           {{ grandchild.name }}
                         </span>
                         <small>{{ formatDate(grandchild.expires_at) }}</small>
+                        <span class="folder-count">{{ grandchild.file_count ?? 0 }}</span>
                       </button>
                     </li>
                   </ul>

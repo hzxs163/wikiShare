@@ -256,13 +256,22 @@ app.post('/api/users/:id/reset-password', requireAdmin, async (c) => {
 })
 
 app.get('/api/folders/tree', async (c) => {
+  const now = nowSeconds()
   const folders = await c.env.DB.prepare(
-    `select * from folders
-     where trashed_at is null
-     order by depth, name`,
+    `select folders.*, count(files.id) as file_count
+     from folders
+     left join files
+       on files.folder_id = folders.id
+      and files.trashed_at is null
+      and files.deleted_at is null
+      and (files.expires_at is null or files.expires_at > ?)
+     where folders.trashed_at is null
+     group by folders.id
+     order by folders.depth, folders.name`,
   )
-    .all<FolderRecord>()
-  return c.json(filterVisibleFolders(folders.results, nowSeconds()))
+    .bind(now)
+    .all<FolderRecord & { file_count: number }>()
+  return c.json(filterVisibleFolders(folders.results, now))
 })
 
 app.post('/api/folders', async (c) => {
@@ -400,7 +409,7 @@ app.post('/api/files/upload', async (c) => {
   return c.json({ id, name: file.name, size: bytes.byteLength }, 201)
 })
 
-app.post('/api/files/markdown', async (c) => {
+app.post('/api/files/markdown', requireAdmin, async (c) => {
   const body = await c.req.json<{ folderId?: string; name?: string; content?: string }>()
   const folderId = body.folderId ?? ''
   if (!folderId || !(await isFolderAvailable(c.env, folderId))) {
@@ -465,8 +474,8 @@ app.patch('/api/files/:id', async (c) => {
   return c.json({ ok: true })
 })
 
-app.put('/api/files/:id/content', async (c) => {
-  const id = c.req.param('id')
+app.put('/api/files/:id/content', requireAdmin, async (c) => {
+  const id = c.req.param('id') ?? ''
   const file = await getFile(c.env, id)
   if (!file || file.deleted_at || file.trashed_at) {
     return jsonError(c, 404, 'file_not_found', '文件不存在。')

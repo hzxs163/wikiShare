@@ -17,6 +17,7 @@ export interface Folder {
   trashed_at?: number | null
   created_at: number
   path?: string
+  file_count?: number
 }
 
 export interface SharedFile {

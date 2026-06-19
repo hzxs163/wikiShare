@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/api'
+import { useAuthStore } from '@/stores/auth'
 import type { SharedFile } from '@/types'
 
 const props = defineProps<{
@@ -10,6 +11,7 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
+const auth = useAuthStore()
 
 interface MarkdownHeading {
   id: string
@@ -22,7 +24,8 @@ const markdownText = ref('')
 const headings = ref<MarkdownHeading[]>([])
 const loading = ref(true)
 const saving = ref(false)
-const editing = ref(route.query.edit === '1')
+const isAdmin = computed(() => auth.user?.role === 'admin')
+const editing = ref(route.query.edit === '1' && auth.user?.role === 'admin')
 const error = ref('')
 const savedMessage = ref('')
 const renderedPreview = computed(() => renderMarkdown(markdownText.value))
@@ -43,6 +46,9 @@ onMounted(async () => {
 })
 
 async function saveMarkdown() {
+  if (!isAdmin.value) {
+    return
+  }
   saving.value = true
   error.value = ''
   savedMessage.value = ''
@@ -167,7 +173,7 @@ function scrollToHeading(id: string) {
     <p v-if="error" class="form-message">{{ error }}</p>
     <p v-if="savedMessage" class="form-message">{{ savedMessage }}</p>
 
-    <div v-if="!loading" class="reader-controls">
+    <div v-if="!loading && isAdmin" class="reader-controls">
       <div class="segmented-control">
         <button type="button" :class="{ active: !editing }" @click="editing = false; updateRenderedMarkdown()">预览</button>
         <button type="button" :class="{ active: editing }" @click="editing = true">编辑</button>
