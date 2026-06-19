@@ -151,6 +151,11 @@ function setUpload(event: Event) {
   }
 }
 
+function openDatePicker(event: MouseEvent) {
+  const input = event.currentTarget as HTMLInputElement
+  input.showPicker?.()
+}
+
 async function selectFolder(folder: Folder) {
   selectedFolderId.value = folder.id
   selectedFolderExpiresAt.value = epochToDateInput(folder.expires_at)
@@ -184,7 +189,13 @@ async function selectFolder(folder: Folder) {
               {{ '　'.repeat(folder.depth - 1) }}{{ folder.name }}
             </option>
           </select>
-          <input v-model="newFolderExpiresAt" type="date" title="文件夹有效期" />
+          <input
+            v-model="newFolderExpiresAt"
+            type="date"
+            placeholder="文件夹有效期"
+            title="文件夹有效期"
+            @click="openDatePicker"
+          />
           <button class="primary-button" type="submit" :disabled="loading">
             <FolderPlus :size="16" />
             新建
@@ -215,7 +226,13 @@ async function selectFolder(folder: Folder) {
         </div>
 
         <form v-if="selectedFolder" class="inline-form" @submit.prevent="updateSelectedFolderExpiration">
-          <input v-model="selectedFolderExpiresAt" type="date" title="文件夹有效期" />
+          <input
+            v-model="selectedFolderExpiresAt"
+            type="date"
+            placeholder="文件夹有效期"
+            title="文件夹有效期"
+            @click="openDatePicker"
+          />
           <button class="primary-button" type="submit">保存有效期</button>
         </form>
 
@@ -238,7 +255,15 @@ async function selectFolder(folder: Folder) {
           <div v-for="file in files" :key="file.id" class="file-row">
             <span>{{ file.name }}</span>
             <span>{{ formatSize(file.size) }}</span>
-            <input class="table-input" type="date" :value="epochToDateInput(file.expires_at)" @change="updateFileExpiration(file, $event)" />
+            <input
+              class="table-input"
+              type="date"
+              :value="epochToDateInput(file.expires_at)"
+              placeholder="文件夹有效期"
+              title="文件夹有效期"
+              @click="openDatePicker"
+              @change="updateFileExpiration(file, $event)"
+            />
             <div class="row-actions">
               <button class="text-button" type="button" @click="router.push(`/reader/file/${file.id}`)">阅读</button>
               <button class="text-button danger-text" type="button" @click="trashFile(file)">回收</button>

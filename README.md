@@ -23,30 +23,30 @@ Cloudflare R2：私有存储 PDF 原文件
 Cloudflare D1：存储用户、会话、文件夹、文件元数据、回收站和审计日志
 ```
 
-## 本地开发
+## 本地开发步骤 下面几个步骤都要执行
 
-安装依赖：
+0. 安装依赖：
 
 ```bash
-npm install
+pnpm install
 ```
 
-应用 D1 本地迁移：
+1. 应用 D1 本地迁移： 初始化本地sql init
 
 ```bash
-npm run db:migrate:local
+pnpm run db:migrate:local
 ```
 
-本地开发时启动 Worker 模拟 Cloudflare 运行环境：
+2. 本地开发时启动 Worker 模拟 Cloudflare 运行环境：
 
 ```bash
-npm run dev:worker
+pnpm run dev:worker
 ```
 
-启动前端：
+3. 打开另一个终端，启动前端：
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 首次访问登录页时，点击“首次部署，初始化管理员”创建第一个管理员账号。
@@ -90,18 +90,18 @@ npx wrangler secret put SESSION_SECRET --config wrangler.local.toml
 远程应用迁移：
 
 ```bash
-npm run db:migrate:remote
+pnpm run db:migrate:remote
 ```
 
 构建并部署：
 
 ```bash
-npm run deploy
+pnpm run deploy
 ```
 
 ## 验证
 
 ```bash
-npm run test
-npm run build
+pnpm run test
+pnpm run build
 ```
