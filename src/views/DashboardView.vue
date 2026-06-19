@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { FolderPlus, Upload } from 'lucide-vue-next'
 import { api } from '@/api'
+import { dateInputToEpoch, epochToDateInput, formatDate } from '@/date'
 import type { Folder, PdfFile } from '@/types'
 
 const router = useRouter()
@@ -11,6 +12,8 @@ const files = ref<PdfFile[]>([])
 const selectedFolderId = ref<string>('')
 const newFolderName = ref('')
 const newFolderParentId = ref<string>('')
+const newFolderExpiresAt = ref('')
+const selectedFolderExpiresAt = ref('')
 const uploadFile = ref<File | null>(null)
 const loading = ref(false)
 const error = ref('')
@@ -25,6 +28,7 @@ async function loadFolders() {
   folders.value = await api<Folder[]>('/api/folders/tree')
   if (!selectedFolderId.value && folders.value.length > 0) {
     selectedFolderId.value = folders.value[0].id
+    selectedFolderExpiresAt.value = epochToDateInput(folders.value[0].expires_at)
     await loadFiles()
   }
 }
@@ -49,15 +53,43 @@ async function createFolder() {
       body: JSON.stringify({
         name: newFolderName.value,
         parentId: newFolderParentId.value || null,
+        expiresAt: dateInputToEpoch(newFolderExpiresAt.value),
       }),
     })
     newFolderName.value = ''
+    newFolderExpiresAt.value = ''
     await loadFolders()
   } catch (err) {
     error.value = err instanceof Error ? err.message : '创建失败'
   } finally {
     loading.value = false
   }
+}
+
+async function updateSelectedFolderExpiration() {
+  if (!selectedFolder.value) {
+    return
+  }
+  await api(`/api/folders/${selectedFolder.value.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      name: selectedFolder.value.name,
+      expiresAt: dateInputToEpoch(selectedFolderExpiresAt.value),
+    }),
+  })
+  await loadFolders()
+}
+
+async function updateFileExpiration(file: PdfFile, event: Event) {
+  const input = event.target as HTMLInputElement
+  await api(`/api/files/${file.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      name: file.name,
+      expiresAt: dateInputToEpoch(input.value),
+    }),
+  })
+  await loadFiles()
 }
 
 async function upload() {
@@ -110,6 +142,12 @@ function setUpload(event: Event) {
   const input = event.target as HTMLInputElement
   uploadFile.value = input.files?.[0] ?? null
 }
+
+async function selectFolder(folder: Folder) {
+  selectedFolderId.value = folder.id
+  selectedFolderExpiresAt.value = epochToDateInput(folder.expires_at)
+  await loadFiles()
+}
 </script>
 
 <template>
@@ -138,6 +176,7 @@ function setUpload(event: Event) {
               {{ '　'.repeat(folder.depth - 1) }}{{ folder.name }}
             </option>
           </select>
+          <input v-model="newFolderExpiresAt" type="date" title="文件夹有效期" />
           <button class="primary-button" type="submit" :disabled="loading">
             <FolderPlus :size="16" />
             新建
@@ -150,19 +189,27 @@ function setUpload(event: Event) {
             :key="folder.id"
             class="folder-row"
             :class="{ active: folder.id === selectedFolderId }"
-            @click="selectedFolderId = folder.id; loadFiles()"
+            @click="selectFolder(folder)"
           >
             <span>{{ '　'.repeat(folder.depth - 1) }}{{ folder.name }}</span>
-            <small>{{ folder.depth }} 级</small>
+            <small>{{ formatDate(folder.expires_at) }}</small>
           </button>
         </div>
       </section>
 
       <section class="panel file-panel">
         <div class="panel-title">
-          <h2>{{ selectedFolder?.name ?? '请选择文件夹' }}</h2>
+          <div>
+            <h2>{{ selectedFolder?.name ?? '请选择文件夹' }}</h2>
+            <span>{{ selectedFolder ? `有效期：${formatDate(selectedFolder.expires_at)}` : '选择文件夹后上传 PDF' }}</span>
+          </div>
           <button v-if="selectedFolder" class="danger-button" type="button" @click="trashFolder(selectedFolder)">移入回收站</button>
         </div>
+
+        <form v-if="selectedFolder" class="inline-form" @submit.prevent="updateSelectedFolderExpiration">
+          <input v-model="selectedFolderExpiresAt" type="date" title="文件夹有效期" />
+          <button class="primary-button" type="submit">保存有效期</button>
+        </form>
 
         <form class="upload-bar" @submit.prevent="upload">
           <input type="file" accept="application/pdf" @change="setUpload" />
@@ -176,11 +223,13 @@ function setUpload(event: Event) {
           <div class="file-table-head">
             <span>文件名</span>
             <span>大小</span>
+            <span>有效期</span>
             <span>操作</span>
           </div>
           <div v-for="file in files" :key="file.id" class="file-row">
             <span>{{ file.name }}</span>
             <span>{{ formatSize(file.size) }}</span>
+            <input class="table-input" type="date" :value="epochToDateInput(file.expires_at)" @change="updateFileExpiration(file, $event)" />
             <div class="row-actions">
               <button class="text-button" type="button" @click="router.push(`/reader/file/${file.id}`)">阅读</button>
               <button class="text-button danger-text" type="button" @click="trashFile(file)">回收</button>
@@ -192,4 +241,3 @@ function setUpload(event: Event) {
     </div>
   </section>
 </template>
-

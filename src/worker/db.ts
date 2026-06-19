@@ -75,6 +75,19 @@ export async function isFolderAvailable(env: Env, folderId: string, now = nowSec
   return true
 }
 
+export async function getEffectiveFolderExpiration(env: Env, folderId: string): Promise<number | null> {
+  let current = await getFolder(env, folderId)
+  let guard = 0
+  while (current && guard < 4) {
+    if (current.expires_at != null) {
+      return current.expires_at
+    }
+    current = current.parent_id ? await getFolder(env, current.parent_id) : null
+    guard += 1
+  }
+  return null
+}
+
 export async function isFileReadable(env: Env, file: FileRecord, now = nowSeconds()): Promise<boolean> {
   if (file.deleted_at || file.trashed_at || isExpired(file.expires_at, now)) {
     return false
@@ -85,4 +98,3 @@ export async function isFileReadable(env: Env, file: FileRecord, now = nowSecond
 function isExpired(expiresAt: number | null, now: number): boolean {
   return expiresAt != null && expiresAt <= now
 }
-

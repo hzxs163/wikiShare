@@ -1,6 +1,6 @@
 import { Hono, type Context, type Next } from 'hono'
 import { hashPassword, newId, nowSeconds, randomToken, sha256Hex, verifyPassword } from './crypto'
-import { audit, countUsers, getFile, getFolder, getSessionUser, getUserByUsername, isFileReadable, isFolderAvailable } from './db'
+import { audit, countUsers, getEffectiveFolderExpiration, getFile, getFolder, getSessionUser, getUserByUsername, isFileReadable, isFolderAvailable } from './db'
 import { clearSessionCookie, getCookie, jsonError, sessionCookie } from './http'
 import { parseRange } from './range'
 import type { Env, FileRecord, R2ObjectBody, ScheduledController, SessionUser, UserRecord } from './types'
@@ -158,8 +158,10 @@ app.post('/api/users', requireAdmin, async (c) => {
 app.patch('/api/users/:id', requireAdmin, async (c) => {
   const id = c.req.param('id')
   const body = await c.req.json<{ role?: 'admin' | 'user'; expiresAt?: number | null; disabled?: boolean }>()
+  const existing = await c.env.DB.prepare('select disabled_at from users where id = ?').bind(id).first<{ disabled_at: number | null }>()
+  const disabledAt = body.disabled === true ? existing?.disabled_at ?? nowSeconds() : body.disabled === false ? null : existing?.disabled_at ?? null
   await c.env.DB.prepare('update users set role = coalesce(?, role), expires_at = ?, disabled_at = ? where id = ?')
-    .bind(body.role ?? null, body.expiresAt ?? null, body.disabled ? nowSeconds() : null, id)
+    .bind(body.role ?? null, body.expiresAt ?? null, disabledAt, id)
     .run()
   await audit(c.env, { userId: c.get('user').id, action: 'user_updated', targetType: 'user', targetId: id })
   return c.json({ ok: true })
@@ -242,8 +244,20 @@ app.get('/api/folders/:id/files', async (c) => {
     return jsonError(c, 404, 'folder_unavailable', '文件夹不存在或不可访问。')
   }
 
-  const files = await c.env.DB.prepare('select * from files where folder_id = ? and trashed_at is null and deleted_at is null order by created_at desc')
-    .bind(folderId)
+  const now = nowSeconds()
+  const inheritedExpiration = await getEffectiveFolderExpiration(c.env, folderId)
+  if (inheritedExpiration != null && inheritedExpiration <= now) {
+    return jsonError(c, 404, 'folder_expired', '文件夹已过期。')
+  }
+  const files = await c.env.DB.prepare(
+    `select * from files
+     where folder_id = ?
+       and trashed_at is null
+       and deleted_at is null
+       and (expires_at is null or expires_at > ?)
+     order by created_at desc`,
+  )
+    .bind(folderId, now)
     .all()
   return c.json(files.results)
 })
@@ -293,6 +307,21 @@ app.get('/api/files/:id/metadata', async (c) => {
     return jsonError(c, 404, 'file_unavailable', '文件不存在或不可访问。')
   }
   return c.json(publicFile(file))
+})
+
+app.patch('/api/files/:id', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json<{ name?: string; expiresAt?: number | null }>()
+  const file = await getFile(c.env, id)
+  if (!file || file.deleted_at) {
+    return jsonError(c, 404, 'file_not_found', '文件不存在。')
+  }
+
+  await c.env.DB.prepare('update files set name = coalesce(?, name), expires_at = ? where id = ?')
+    .bind(body.name?.trim() || null, body.expiresAt ?? null, id)
+    .run()
+  await audit(c.env, { userId: c.get('user').id, action: 'file_updated', targetType: 'file', targetId: id })
+  return c.json({ ok: true })
 })
 
 app.get('/api/files/:id/content', async (c) => {
@@ -373,7 +402,7 @@ app.post('/api/trash/cleanup', requireAdmin, async (c) => {
 })
 
 app.get('/api/audit-logs', requireAdmin, async (c) => {
-  const rows = await c.env.DB.prepare('select * from audit_logs order by created_at desc limit 200').all()
+  const rows = await c.env.DB.prepare('select * from audit_logs order by created_at desc limit 300').all()
   return c.json(rows.results)
 })
 

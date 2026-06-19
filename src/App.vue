@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileText, LogOut, Recycle, Users } from 'lucide-vue-next'
+import { ClipboardList, FileText, LogOut, Recycle, Settings, Users } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 
@@ -36,6 +36,14 @@ async function logout() {
           <Users :size="18" />
           用户
         </RouterLink>
+        <RouterLink v-if="auth.user.role === 'admin'" to="/audit-logs" class="nav-item">
+          <ClipboardList :size="18" />
+          审计
+        </RouterLink>
+        <RouterLink to="/settings" class="nav-item">
+          <Settings :size="18" />
+          设置
+        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">
@@ -54,4 +62,3 @@ async function logout() {
     </main>
   </div>
 </template>
-

@@ -37,3 +37,14 @@ export interface ApiError {
   }
 }
 
+export interface AuditLog {
+  id: string
+  user_id: string | null
+  action: string
+  target_type: string | null
+  target_id: string | null
+  ip: string | null
+  user_agent: string | null
+  detail: string | null
+  created_at: number
+}
