@@ -10,9 +10,9 @@
     "test": "tsc -p tsconfig.test.json && node .tmp-tests/scripts/test.mjs",
     "typecheck": "vue-tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "cf:prepare": "node scripts/prepare-cloudflare.mjs",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm run build && wrangler deploy --config wrangler.local.toml",
     "db:migrate:local": "wrangler d1 migrations apply cfshare-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply cfshare-db --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply cfshare-db --remote --config wrangler.local.toml"
   },
   "dependencies": {
     "hono": "^4.10.8",

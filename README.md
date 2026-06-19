@@ -81,14 +81,13 @@ npx wrangler secret put SESSION_SECRET --config wrangler.local.toml
 远程应用迁移：
 
 ```bash
-npx wrangler d1 migrations apply cfshare-db --remote --config wrangler.local.toml
+npm run db:migrate:remote
 ```
 
 构建并部署：
 
 ```bash
-npm run build
-npx wrangler deploy --config wrangler.local.toml
+npm run deploy
 ```
 
 ## 验证
