@@ -152,6 +152,145 @@ h2 {
   gap: 20px;
 }
 
+.browse-workspace {
+  gap: 18px;
+}
+
+.browse-header {
+  align-items: flex-end;
+}
+
+.browse-summary {
+  display: grid;
+  min-width: 104px;
+  min-height: 64px;
+  place-items: center;
+  border: 1px solid #d9d1c2;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.82);
+  color: #536158;
+}
+
+.browse-summary strong {
+  color: #15201b;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.browse-summary span {
+  font-size: 12px;
+}
+
+.browse-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.browse-tree-panel,
+.browse-files-panel {
+  min-height: calc(100vh - 150px);
+  align-content: start;
+}
+
+.browse-tree-panel {
+  position: sticky;
+  top: 28px;
+}
+
+.browse-folder-row {
+  min-height: 46px;
+}
+
+.browse-files-panel {
+  gap: 20px;
+}
+
+.browse-folder-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e5ddce;
+}
+
+.browse-folder-heading h2 {
+  margin-top: 4px;
+  font-size: 28px;
+}
+
+.browse-folder-heading span {
+  display: block;
+  margin-top: 4px;
+  color: #7a827c;
+  font-size: 13px;
+}
+
+.browse-folder-heading svg {
+  flex: 0 0 auto;
+  color: #1f6f54;
+}
+
+.browse-file-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.browse-file-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid #ddd4c4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fffdfa;
+  color: #15201b;
+  text-align: left;
+}
+
+.browse-file-card:hover {
+  border-color: #1f6f54;
+  background: #f4faf6;
+}
+
+.file-card-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e4efe9;
+  color: #1f6f54;
+}
+
+.file-card-main {
+  min-width: 0;
+}
+
+.file-card-main strong,
+.file-card-main small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-card-main small {
+  margin-top: 4px;
+  color: #7a827c;
+  font-size: 12px;
+}
+
+.file-card-action {
+  color: #1f6f54;
+  font-weight: 700;
+}
+
 .panel,
 .login-panel {
   border: 1px solid #d9d1c2;
@@ -518,9 +657,27 @@ canvas {
   }
 
   .split-layout,
+  .browse-layout,
   .user-form,
   .inline-form {
     grid-template-columns: 1fr;
+  }
+
+  .browse-header {
+    align-items: flex-start;
+  }
+
+  .browse-summary {
+    display: none;
+  }
+
+  .browse-tree-panel,
+  .browse-files-panel {
+    min-height: auto;
+  }
+
+  .browse-tree-panel {
+    position: static;
   }
 
   .file-table-head,

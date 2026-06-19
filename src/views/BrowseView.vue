@@ -1,0 +1,200 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { BookOpen, FileText, Folder } from 'lucide-vue-next'
+import { api } from '@/api'
+import { formatDate } from '@/date'
+import type { Folder as FolderItem, PdfFile } from '@/types'
+
+type FolderTreeNode = FolderItem & {
+  children: FolderTreeNode[]
+}
+
+const router = useRouter()
+const folders = ref<FolderItem[]>([])
+const files = ref<PdfFile[]>([])
+const selectedFolderId = ref('')
+const loadingFiles = ref(false)
+const error = ref('')
+
+const selectedFolder = computed(() => folders.value.find((folder) => folder.id === selectedFolderId.value) ?? null)
+const folderTree = computed(() => {
+  const nodeById = new Map<string, FolderTreeNode>()
+  const roots: FolderTreeNode[] = []
+
+  for (const folder of folders.value) {
+    nodeById.set(folder.id, { ...folder, children: [] })
+  }
+
+  for (const folder of folders.value) {
+    const node = nodeById.get(folder.id)
+    if (!node) {
+      continue
+    }
+
+    const parent = folder.parent_id ? nodeById.get(folder.parent_id) : null
+    if (parent) {
+      parent.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  }
+
+  return roots
+})
+
+onMounted(loadFolders)
+
+async function loadFolders() {
+  error.value = ''
+  try {
+    folders.value = await api<FolderItem[]>('/api/folders/tree')
+    if (folders.value.length > 0) {
+      await selectFolder(folders.value[0])
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '加载文件夹失败'
+  }
+}
+
+async function loadFiles() {
+  if (!selectedFolderId.value) {
+    files.value = []
+    return
+  }
+
+  loadingFiles.value = true
+  error.value = ''
+  try {
+    files.value = await api<PdfFile[]>(`/api/folders/${selectedFolderId.value}/files`)
+  } catch (err) {
+    files.value = []
+    error.value = err instanceof Error ? err.message : '加载文件失败'
+  } finally {
+    loadingFiles.value = false
+  }
+}
+
+async function selectFolder(folder: FolderItem) {
+  selectedFolderId.value = folder.id
+  await loadFiles()
+}
+
+function formatSize(size: number): string {
+  if (size < 1024 * 1024) {
+    return `${Math.round(size / 1024)} KB`
+  }
+  return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+</script>
+
+<template>
+  <section class="workspace browse-workspace">
+    <header class="page-header browse-header">
+      <div>
+        <p class="eyebrow">资料浏览</p>
+        <h1>PDF 在线阅读</h1>
+      </div>
+      <div class="browse-summary">
+        <strong>{{ folders.length }}</strong>
+        <span>个文件夹</span>
+      </div>
+    </header>
+
+    <p v-if="error" class="form-message">{{ error }}</p>
+
+    <div class="browse-layout">
+      <section class="panel browse-tree-panel">
+        <div class="panel-title">
+          <h2>目录</h2>
+          <span>选择层级查看文件</span>
+        </div>
+
+        <div v-if="folderTree.length" class="folder-list">
+          <ul class="tree-list">
+            <li v-for="folder in folderTree" :key="folder.id" class="tree-item">
+              <button
+                class="folder-row browse-folder-row"
+                :class="{ active: folder.id === selectedFolderId }"
+                @click="selectFolder(folder)"
+              >
+                <span class="folder-name">
+                  <Folder :size="16" />
+                  {{ folder.name }}
+                </span>
+                <small>{{ formatDate(folder.expires_at) }}</small>
+              </button>
+
+              <ul v-if="folder.children.length" class="tree-list tree-children">
+                <li v-for="child in folder.children" :key="child.id" class="tree-item">
+                  <button
+                    class="folder-row browse-folder-row"
+                    :class="{ active: child.id === selectedFolderId }"
+                    @click="selectFolder(child)"
+                  >
+                    <span class="folder-name">
+                      <Folder :size="16" />
+                      {{ child.name }}
+                    </span>
+                    <small>{{ formatDate(child.expires_at) }}</small>
+                  </button>
+
+                  <ul v-if="child.children.length" class="tree-list tree-children">
+                    <li v-for="grandchild in child.children" :key="grandchild.id" class="tree-item">
+                      <button
+                        class="folder-row browse-folder-row"
+                        :class="{ active: grandchild.id === selectedFolderId }"
+                        @click="selectFolder(grandchild)"
+                      >
+                        <span class="folder-name">
+                          <Folder :size="16" />
+                          {{ grandchild.name }}
+                        </span>
+                        <small>{{ formatDate(grandchild.expires_at) }}</small>
+                      </button>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <p v-else class="empty-state">暂无可阅读目录。</p>
+      </section>
+
+      <section class="panel browse-files-panel">
+        <div class="browse-folder-heading">
+          <div>
+            <p class="eyebrow">当前目录</p>
+            <h2>{{ selectedFolder?.name ?? '请选择目录' }}</h2>
+            <span>{{ selectedFolder ? `有效期：${formatDate(selectedFolder.expires_at)}` : '左侧选择目录后查看 PDF' }}</span>
+          </div>
+          <BookOpen :size="28" />
+        </div>
+
+        <div class="browse-file-grid">
+          <button
+            v-for="file in files"
+            :key="file.id"
+            class="browse-file-card"
+            type="button"
+            @click="router.push(`/reader/file/${file.id}`)"
+          >
+            <span class="file-card-icon">
+              <FileText :size="22" />
+            </span>
+            <span class="file-card-main">
+              <strong>{{ file.name }}</strong>
+              <small>{{ formatSize(file.size) }} · {{ formatDate(file.expires_at) }}</small>
+            </span>
+            <span class="file-card-action">阅读</span>
+          </button>
+        </div>
+
+        <p v-if="loadingFiles" class="empty-state">正在加载文件...</p>
+        <p v-else-if="selectedFolderId && files.length === 0" class="empty-state">当前目录还没有可阅读 PDF。</p>
+      </section>
+    </div>
+  </section>
+</template>

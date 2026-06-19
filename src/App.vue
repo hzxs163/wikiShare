@@ -26,9 +26,13 @@ async function logout() {
       <nav class="nav-list">
         <RouterLink to="/" class="nav-item">
           <FileText :size="18" />
-          文件
+          浏览
         </RouterLink>
-        <RouterLink to="/trash" class="nav-item">
+        <RouterLink v-if="auth.user.role === 'admin'" to="/manage" class="nav-item">
+          <FileText :size="18" />
+          管理
+        </RouterLink>
+        <RouterLink v-if="auth.user.role === 'admin'" to="/trash" class="nav-item">
           <Recycle :size="18" />
           回收站
         </RouterLink>
