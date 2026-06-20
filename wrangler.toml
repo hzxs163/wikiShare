@@ -1,4 +1,6 @@
 name = "cfshare"
+# Pages必须的输出目录配置
+pages_build_output_dir = "./dist"
 main = "src/worker/index.ts"
 compatibility_date = "2026-06-19"
 
