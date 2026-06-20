@@ -1,20 +1,16 @@
 name = "cfshare"
-# Pages必须的输出目录配置
 pages_build_output_dir = "./dist"
 main = "src/worker/index.ts"
 compatibility_date = "2026-06-19"
 
-[assets]
-directory = "./dist"
-binding = "ASSETS"
-not_found_handling = "single-page-application"
-run_worker_first = ["/api/*"]
-
+# Pages不支持run_worker_first数组，直接删除assets完整块
+# [[d1_databases]] 不变
 [[d1_databases]]
 binding = "DB"
 database_name = "cfshare-db"
 database_id = "b8e631c3-2f55-4ca4-94bf-2e8d95a8fbb9"
 
+# R2绑定已修正为 BUCKET
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "cfshare-pdfs"
