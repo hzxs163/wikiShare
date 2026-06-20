@@ -748,6 +748,7 @@ async function dropOnRoot() {
             <Upload :size="16" />
             {{ uploadProgress ? `上传中 ${uploadProgress.uploaded}/${uploadProgress.total}` : '上传文档' }}
           </button>
+          <strong v-if="uploadProgress" class="upload-warning">上传中，请不要离开页面</strong>
           <span class="upload-hint">{{ uploadSelectionText }}</span>
         </form>
 

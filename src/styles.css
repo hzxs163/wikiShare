@@ -425,8 +425,16 @@ h2 {
   white-space: nowrap;
 }
 
+.upload-warning {
+  align-self: center;
+  color: var(--docs-danger);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .upload-bar {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
   align-items: center;
   border: 1px dashed transparent;
   border-radius: 8px;

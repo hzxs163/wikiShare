@@ -526,7 +526,7 @@ app.post('/api/files/markdown', requireAdmin, async (c) => {
 })
 
 app.get('/api/files/:id/metadata', async (c) => {
-  const file = await getReadableFile(c.env, c.req.param('id'))
+  const file = await getReadableFile(c.env, c.req.param('id'), c.get('user').role)
   if (!file) {
     return jsonError(c, 404, 'file_unavailable', '文件不存在或不可访问。')
   }
@@ -585,7 +585,7 @@ app.put('/api/files/:id/content', requireAdmin, async (c) => {
 })
 
 app.get('/api/files/:id/content', async (c) => {
-  const file = await getReadableFile(c.env, c.req.param('id'))
+  const file = await getReadableFile(c.env, c.req.param('id'), c.get('user').role)
   if (!file) {
     return jsonError(c, 404, 'file_unavailable', '文件不存在或不可访问。')
   }
@@ -778,9 +778,10 @@ function joinPath(parentPath: string | undefined, name: string): string {
   return parentPath ? `${parentPath}/${name}` : name
 }
 
-async function getReadableFile(env: Env, id: string): Promise<FileRecord | null> {
+async function getReadableFile(env: Env, id: string, role: SessionUser['role']): Promise<FileRecord | null> {
   const file = await getFile(env, id)
-  if (!file || !(await isFileReadable(env, file))) {
+  const visibleAfter = role === 'admin' ? 0 : nowSeconds()
+  if (!file || !(await isFileReadable(env, file, visibleAfter))) {
     return null
   }
   return file
