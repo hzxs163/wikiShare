@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Download, Folder, FolderPlus, Upload } from 'lucide-vue-next'
+import { Download, Folder, FolderPlus, Plus, Upload } from 'lucide-vue-next'
 import { api } from '@/api'
 import { dateInputToEpoch, epochToDateInput, formatDate } from '@/date'
 import type { Folder as FolderItem, SharedFile } from '@/types'
@@ -10,6 +10,7 @@ const router = useRouter()
 const folders = ref<FolderItem[]>([])
 const files = ref<SharedFile[]>([])
 const selectedFolderId = ref<string>('')
+const newFolderNameInput = ref<HTMLInputElement | null>(null)
 const newFolderName = ref('')
 const newFolderParentId = ref<string>('')
 const newFolderExpiresAt = ref('')
@@ -129,6 +130,15 @@ async function createFolder() {
   } finally {
     loading.value = false
   }
+}
+
+function prepareChildFolder(parent: FolderItem) {
+  if (parent.depth >= 3) {
+    return
+  }
+  newFolderParentId.value = parent.id
+  newFolderName.value = ''
+  newFolderNameInput.value?.focus()
 }
 
 async function updateSelectedFolderExpiration() {
@@ -488,7 +498,7 @@ async function dropOnRoot() {
         </div>
 
         <form class="compact-form" @submit.prevent="createFolder">
-          <input v-model="newFolderName" placeholder="新文件夹名称，例如 2026-06-19" />
+          <input ref="newFolderNameInput" v-model="newFolderName" placeholder="新文件夹名称，例如 2026-06-19" />
           <select v-model="newFolderParentId">
             <option value="">根目录</option>
             <option v-for="folder in parentOptions" :key="folder.id" :value="folder.id">
@@ -517,45 +527,55 @@ async function dropOnRoot() {
         >
           <ul class="tree-list">
             <li v-for="folder in folderTree" :key="folder.id" class="tree-item">
-              <button
-                class="folder-row"
-                :class="{ active: folder.id === selectedFolderId, dragging: folder.id === draggedFolderId, 'drop-target': isDropTarget(folder, 'inside'), 'drop-before': isDropTarget(folder, 'before'), 'drop-after': isDropTarget(folder, 'after') }"
-                draggable="true"
-                @dragstart="startFolderDrag(folder, $event)"
-                @dragover="dragOverFolder(folder, $event)"
-                @dragleave="dropTarget = null"
-                @dragend="clearFolderDrag"
-                @drop.stop="dropOnFolder(folder)"
-                @click="selectFolder(folder)"
-              >
-                <span class="folder-name">
-                  <Folder :size="16" />
-                  {{ folder.name }}
-                </span>
-                <small>{{ formatDate(folder.expires_at) }}</small>
-                <span class="folder-count">{{ folder.file_count ?? 0 }}</span>
-              </button>
+              <div class="folder-row-shell">
+                <button
+                  class="folder-row"
+                  :class="{ active: folder.id === selectedFolderId, dragging: folder.id === draggedFolderId, 'drop-target': isDropTarget(folder, 'inside'), 'drop-before': isDropTarget(folder, 'before'), 'drop-after': isDropTarget(folder, 'after') }"
+                  draggable="true"
+                  @dragstart="startFolderDrag(folder, $event)"
+                  @dragover="dragOverFolder(folder, $event)"
+                  @dragleave="dropTarget = null"
+                  @dragend="clearFolderDrag"
+                  @drop.stop="dropOnFolder(folder)"
+                  @click="selectFolder(folder)"
+                >
+                  <span class="folder-name">
+                    <Folder :size="16" />
+                    {{ folder.name }}
+                  </span>
+                  <small>{{ formatDate(folder.expires_at) }}</small>
+                  <span class="folder-count">{{ folder.file_count ?? 0 }}</span>
+                </button>
+                <button class="folder-add-button" type="button" title="新增子文件夹" @click.stop="prepareChildFolder(folder)">
+                  <Plus :size="16" />
+                </button>
+              </div>
 
               <ul v-if="folder.children.length" class="tree-list tree-children">
                 <li v-for="child in folder.children" :key="child.id" class="tree-item">
-                  <button
-                    class="folder-row"
-                    :class="{ active: child.id === selectedFolderId, dragging: child.id === draggedFolderId, 'drop-target': isDropTarget(child, 'inside'), 'drop-before': isDropTarget(child, 'before'), 'drop-after': isDropTarget(child, 'after') }"
-                    draggable="true"
-                    @dragstart="startFolderDrag(child, $event)"
-                    @dragover="dragOverFolder(child, $event)"
-                    @dragleave="dropTarget = null"
-                    @dragend="clearFolderDrag"
-                    @drop.stop="dropOnFolder(child)"
-                    @click="selectFolder(child)"
-                  >
-                    <span class="folder-name">
-                      <Folder :size="16" />
-                      {{ child.name }}
-                    </span>
-                    <small>{{ formatDate(child.expires_at) }}</small>
-                    <span class="folder-count">{{ child.file_count ?? 0 }}</span>
-                  </button>
+                  <div class="folder-row-shell">
+                    <button
+                      class="folder-row"
+                      :class="{ active: child.id === selectedFolderId, dragging: child.id === draggedFolderId, 'drop-target': isDropTarget(child, 'inside'), 'drop-before': isDropTarget(child, 'before'), 'drop-after': isDropTarget(child, 'after') }"
+                      draggable="true"
+                      @dragstart="startFolderDrag(child, $event)"
+                      @dragover="dragOverFolder(child, $event)"
+                      @dragleave="dropTarget = null"
+                      @dragend="clearFolderDrag"
+                      @drop.stop="dropOnFolder(child)"
+                      @click="selectFolder(child)"
+                    >
+                      <span class="folder-name">
+                        <Folder :size="16" />
+                        {{ child.name }}
+                      </span>
+                      <small>{{ formatDate(child.expires_at) }}</small>
+                      <span class="folder-count">{{ child.file_count ?? 0 }}</span>
+                    </button>
+                    <button class="folder-add-button" type="button" title="新增子文件夹" @click.stop="prepareChildFolder(child)">
+                      <Plus :size="16" />
+                    </button>
+                  </div>
 
                   <ul v-if="child.children.length" class="tree-list tree-children">
                     <li v-for="grandchild in child.children" :key="grandchild.id" class="tree-item">

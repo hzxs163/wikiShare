@@ -555,6 +555,13 @@ textarea {
   content: "";
 }
 
+.folder-row-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 6px;
+  align-items: center;
+}
+
 .folder-row {
   position: relative;
   display: flex;
@@ -568,6 +575,22 @@ textarea {
   background: #fffdfa;
   color: #15201b;
   text-align: left;
+}
+
+.folder-add-button {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #ddd4c4;
+  border-radius: 6px;
+  background: #fffdfa;
+  color: #1f6f54;
+}
+
+.folder-add-button:hover {
+  border-color: #1f6f54;
+  background: #e4efe9;
 }
 
 .folder-name {
