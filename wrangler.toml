@@ -11,7 +11,7 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "cfshare-db"
-database_id = "replace-with-cloudflare-d1-database-id"
+database_id = "b8e631c3-2f55-4ca4-94bf-2e8d95a8fbb9"
 
 [[r2_buckets]]
 binding = "PDF_BUCKET"
